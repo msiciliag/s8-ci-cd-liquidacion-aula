@@ -50,6 +50,8 @@ jobs:
           java-version: '17'
       - if: matrix.plataforma == 'android'
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - run: npm ci
       - shell: bash
         run: bash scripts/empaquetar.sh "${{ matrix.plataforma }}"
@@ -77,12 +79,20 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          files=(descargas/*)
-          test "${#files[@]}" -eq 4
+          files=(
+            descargas/liquidacion-android-arm64.apk
+            descargas/liquidacion-windows-x64.exe
+            descargas/liquidacion-macos-arm64.app.tar.gz
+            descargas/liquidacion-ios-simulador-arm64.app.tar.gz
+          )
+          for file in "${files[@]}"; do test -s "$file"; done
           tag="aula-${GITHUB_SHA}"
-          # Una release ya publicada para esta revisión se conserva en reintentos.
-          if gh release view "$tag" >/dev/null 2>&1; then
-            echo "Ya publicada: $tag"
+          # Un reintento puede encontrar una release en borrador tras un corte en la subida.
+          if draft=$(gh release view "$tag" --json isDraft --jq '.isDraft' 2>/dev/null); then
+            if [[ "$draft" == true ]]; then
+              gh release upload "$tag" "${files[@]}" --clobber
+              gh release edit "$tag" --draft=false
+            fi
           else
             gh release create "$tag" "${files[@]}" --target "$GITHUB_SHA" --title "Liquidación · ${GITHUB_SHA:0:7}" --notes "Compilación de aula del commit ${GITHUB_SHA}. iOS: simulador Apple Silicon."
           fi

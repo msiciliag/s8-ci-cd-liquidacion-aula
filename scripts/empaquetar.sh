@@ -18,7 +18,7 @@ case "${1:?Indica android, windows, macos o ios}" in
     trap 'rm -f "$keydir/aula.jks"; rmdir "$keydir"' EXIT
     pass=$(openssl rand -hex 16)
     export AULA_KEY_PASS="$pass"
-    keytool -genkeypair -noprompt -alias aula -keyalg RSA -keysize 2048 -validity 2 -dname 'CN=Ensayo local' -storetype JKS -keystore "$keydir/aula.jks" -storepass:env AULA_KEY_PASS -keypass:env AULA_KEY_PASS
+    keytool -genkeypair -noprompt -alias aula -keyalg RSA -keysize 2048 -validity 3650 -dname 'CN=Ensayo local' -storetype JKS -keystore "$keydir/aula.jks" -storepass:env AULA_KEY_PASS -keypass:env AULA_KEY_PASS
     signer="$ANDROID_HOME/build-tools/36.0.0/apksigner"
     "$signer" sign --ks "$keydir/aula.jks" --ks-pass env:AULA_KEY_PASS --key-pass env:AULA_KEY_PASS --v4-signing-enabled false --out entrega/liquidacion-android-arm64.apk "$apk"
     "$signer" verify --verbose entrega/liquidacion-android-arm64.apk
@@ -34,6 +34,9 @@ case "${1:?Indica android, windows, macos o ios}" in
     npm run tauri -- build --ci --bundles app
     apps=(src-tauri/target/release/bundle/macos/*.app)
     test "${#apps[@]}" -eq 1 && test -d "${apps[0]}"
+    # Sella el bundle con identidad ad hoc local, sin cuenta de desarrollador.
+    codesign --force --sign - --timestamp=none "${apps[0]}"
+    codesign --verify --strict "${apps[0]}"
     tar -C "$(dirname "${apps[0]}")" -czf entrega/liquidacion-macos-arm64.app.tar.gz "$(basename "${apps[0]}")"
     ;;
   ios)
