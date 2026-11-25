@@ -1,0 +1,20 @@
+name: Aviso de aula
+on:
+  workflow_dispatch:
+    inputs:
+      nombre:
+        description: Nombre o alias para el saludo
+        required: true
+        default: Clase
+        type: string
+permissions: {}
+jobs:
+  saludar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Escribir el resumen
+        shell: bash
+        env:
+          NOMBRE: ${{ inputs.nombre }}
+        run: |
+          printf 'Hola, %s\n\nCommit: `%s`\n' "$NOMBRE" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
