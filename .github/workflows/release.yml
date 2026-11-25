@@ -50,6 +50,8 @@ jobs:
           java-version: '17'
       - if: matrix.plataforma == 'android'
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - run: npm ci
       - shell: bash
         run: bash scripts/empaquetar.sh "${{ matrix.plataforma }}"
