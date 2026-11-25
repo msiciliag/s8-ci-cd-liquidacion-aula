@@ -1,0 +1,88 @@
+name: Entregar aplicación
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.sha }}
+  cancel-in-progress: false
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run check
+  construir:
+    needs: validar
+    name: Construir ${{ matrix.plataforma }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 65
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - plataforma: android
+            runner: ubuntu-latest
+          - plataforma: windows
+            runner: windows-2022
+          - plataforma: macos
+            runner: macos-15
+          - plataforma: ios
+            runner: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - if: matrix.plataforma == 'android'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - if: matrix.plataforma == 'android'
+        uses: android-actions/setup-android@v3
+      - run: npm ci
+      - shell: bash
+        run: bash scripts/empaquetar.sh "${{ matrix.plataforma }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: instalador-${{ matrix.plataforma }}
+          path: entrega/*
+          if-no-files-found: error
+          retention-days: 2
+  publicar:
+    needs: construir
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: instalador-*
+          path: descargas
+          merge-multiple: true
+      - name: Publicar los cuatro archivos del mismo commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          files=(descargas/*)
+          test "${#files[@]}" -eq 4
+          tag="aula-${GITHUB_SHA}"
+          # Una release ya publicada para esta revisión se conserva en reintentos.
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Ya publicada: $tag"
+          else
+            gh release create "$tag" "${files[@]}" --target "$GITHUB_SHA" --title "Liquidación · ${GITHUB_SHA:0:7}" --notes "Compilación de aula del commit ${GITHUB_SHA}. iOS: simulador Apple Silicon."
+          fi
