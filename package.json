@@ -8,7 +8,7 @@
     "preview": "vite preview --host 127.0.0.1 --port 4173 --strictPort",
     "build": "vite build",
     "test": "node --test tests/humo.test.mjs",
-    "check": "npm test && npm run build",
+    "check": "npm test && node --test pruebas_reto/liquidacion.test.mjs && npm run build",
     "tauri": "tauri"
   },
   "dependencies": {
