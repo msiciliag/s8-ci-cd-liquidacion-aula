@@ -1,6 +1,7 @@
 export function calcularLiquidacion(reservas) {
+  const liquidadas = reservas.filter((reserva) => reserva.estado === "confirmada");
   return {
-    confirmadas: reservas.filter((reserva) => reserva.estado === "confirmada").length,
-    totalCentimos: reservas.reduce((total, reserva) => total + reserva.importeCentimos, 0),
+    confirmadas: liquidadas.length,
+    totalCentimos: liquidadas.reduce((total, reserva) => total + reserva.importeCentimos, 0),
   };
 }
