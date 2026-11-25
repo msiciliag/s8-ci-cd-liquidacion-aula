@@ -34,6 +34,9 @@ case "${1:?Indica android, windows, macos o ios}" in
     npm run tauri -- build --ci --bundles app
     apps=(src-tauri/target/release/bundle/macos/*.app)
     test "${#apps[@]}" -eq 1 && test -d "${apps[0]}"
+    # Sella el bundle con identidad ad hoc local, sin cuenta de desarrollador.
+    codesign --force --sign - --timestamp=none "${apps[0]}"
+    codesign --verify --strict "${apps[0]}"
     tar -C "$(dirname "${apps[0]}")" -czf entrega/liquidacion-macos-arm64.app.tar.gz "$(basename "${apps[0]}")"
     ;;
   ios)
