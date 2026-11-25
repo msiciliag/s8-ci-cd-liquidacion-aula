@@ -1,0 +1,57 @@
+name: Diagnóstico Android
+on:
+  push:
+    branches: [ensayo/android]
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.sha }}
+  cancel-in-progress: false
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run check
+  construir:
+    needs: validar
+    name: Construir ${{ matrix.plataforma }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 65
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - plataforma: android
+            runner: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - if: matrix.plataforma == 'android'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - if: matrix.plataforma == 'android'
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: npm ci
+      - shell: bash
+        run: bash scripts/empaquetar.sh "${{ matrix.plataforma }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: instalador-${{ matrix.plataforma }}
+          path: entrega/*
+          if-no-files-found: error
+          retention-days: 2
