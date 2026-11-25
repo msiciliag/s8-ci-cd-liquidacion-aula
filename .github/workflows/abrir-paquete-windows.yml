@@ -4,7 +4,6 @@ on:
     branches: [ensayo/verificar-windows]
 permissions:
   contents: read
-  actions: read
 jobs:
   instalar:
     runs-on: windows-2022
@@ -16,7 +15,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh run download 45685941980 --repo $env:GH_REPO -n instalador-windows -D .
+          gh release download aula-8c5342f7fa77b296fbdc851e9e6fff23453a3778 --pattern liquidacion-windows-x64.exe
           if ($LASTEXITCODE -ne 0) { throw 'Descarga fallida' }
           Get-FileHash .\liquidacion-windows-x64.exe
       - name: Instalar y abrir en el runner
