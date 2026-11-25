@@ -2,12 +2,12 @@ name: Hola mundo
 on:
   push:
     branches: [main]
-permissions: {}
+permissions:
+  contents: read
 jobs:
   saludar:
     runs-on: ubuntu-latest
     steps:
-      - name: Mostrar el saludo de esta revisión
-        shell: bash
-        run: |
-          printf 'Hola mundo\n\nRama: %s\n\nCommit: %s\n' "$GITHUB_REF_NAME" "$GITHUB_SHA" | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/checkout@v4
+      - name: Ejecutar el saludo
+        run: bash scripts/saludo.sh
